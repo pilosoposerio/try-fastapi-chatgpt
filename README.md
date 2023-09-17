@@ -1,6 +1,10 @@
 # FastAPI ChatGPT Sample Project
 
-This repository contains a sample project that demonstrates how to integrate [FastAPI](https://fastapi.tiangolo.com/) with ChatGPT, a powerful language model developed by OpenAI. With this project, you can create a simple web application that allows users to interact with ChatGPT through a RESTful API.
+This repository contains a sample project that demonstrates how to integrate
+[FastAPI](https://fastapi.tiangolo.com/) with ChatGPT, a powerful language model developed by OpenAI.
+With this project, you can create a simple web application that allows users to
+interact with ChatGPT through a RESTful API. The API's sole capability is to
+request travel recommendations from ChatGPT given a country and a season.
 
 ## Prerequisites
 
