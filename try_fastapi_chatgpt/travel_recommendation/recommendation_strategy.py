@@ -1,7 +1,9 @@
 import json
 import logging
+import time
 from abc import abstractmethod, ABC
 from dataclasses import dataclass
+from functools import cached_property
 from typing import List, Final, Tuple, Dict
 
 import openai
@@ -9,6 +11,12 @@ import openai
 from try_fastapi_chatgpt.travel_recommendation.travel_recommendation import (
     TravelRecommendation,
 )
+
+
+class TravelRecommendationStrategyError(RuntimeError):
+    """
+    Exception class used whenever the strategy fails to generate recommendations.
+    """
 
 
 @dataclass(frozen=True)
@@ -54,6 +62,7 @@ class BoringTravelRecommendationStrategy(TravelRecommendationStrategy):
 
 @dataclass(frozen=True)
 class ChatGPTTravelRecommendationStrategy(TravelRecommendationStrategy):
+    openai_api_max_retry_attempts: int = 3
     N_RECOMMENDATIONS: Final[int] = 3
     MODEL: Final[str] = "gpt-3.5-turbo-0613"
     PROMPTS: Final[Tuple[Dict[str, str], ...]] = (
@@ -113,35 +122,67 @@ class ChatGPTTravelRecommendationStrategy(TravelRecommendationStrategy):
         },
     )
 
-    def recommend(
-        self, country: str, season: str
-    ) -> List[TravelRecommendation]:
+    @cached_property
+    def base_prompts_list(self):
+        return list(self.__class__.PROMPTS)
+
+    def __prompt_gpt(
+        self,
+        country: str,
+        season: str,
+        retry_attempt: int = 0,
+        exponential_backoff_base: int = 2,
+    ) -> List[str]:
         prompt: Dict[str, str] = {
             "role": "user",
             "content": f"{country}: {season}",
         }
-        messages: List[Dict] = list(self.__class__.PROMPTS) + [prompt]
-        response = openai.ChatCompletion.create(
-            model=self.__class__.MODEL,
-            messages=messages,
-            temperature=0.8,
-        )
-
-        # log
-        logging.debug(response)
-
-        choices_json_str: str = response["choices"][0]["message"]["content"]
-
+        messages: List[Dict] = self.base_prompts_list + [prompt]
         try:
+            response = openai.ChatCompletion.create(
+                model=self.__class__.MODEL,
+                messages=messages,
+                temperature=0.8,
+            )
+            choices_json_str: str = response["choices"][0]["message"][
+                "content"
+            ]
             recommendations: List = json.loads(choices_json_str)
-        except json.decoder.JSONDecodeError as exc:
-            logging.exception(f"JSON input: {choices_json_str}")
-            raise
+            return recommendations
+        except (
+            openai.error.APIError,
+            openai.error.Timeout,
+            openai.error.RateLimitError,
+            openai.error.ServiceUnavailableError,
+            json.decoder.JSONDecodeError,
+        ) as exc:
+            if retry_attempt > self.openai_api_max_retry_attempts:
+                raise RuntimeError(
+                    "OpenAI API call repeatedly failed for"
+                    f" {retry_attempt} attempts."
+                )
+            wait_time: int = exponential_backoff_base**retry_attempt
+            logging.exception(
+                f"OpenAI API call error: {exc}. Retrying after"
+                f" {retry_attempt} seconds..."
+            )
 
-        assert len(recommendations) == self.__class__.N_RECOMMENDATIONS, (
-            f"Expecting {self.__class__.N_RECOMMENDATIONS} recommendations, but"
-            f"got {len(recommendations)}"
-        )
+            time.sleep(wait_time)
+            return self.__prompt_gpt(country, season, retry_attempt + 1)
+
+    def recommend(
+        self, country: str, season: str, retry_attempt: int = 0
+    ) -> List[TravelRecommendation]:
+        try:
+            recommendations: List[str] = self.__prompt_gpt(country, season)
+            assert len(recommendations) == self.__class__.N_RECOMMENDATIONS, (
+                f"Expecting {self.__class__.N_RECOMMENDATIONS} recommendations, but"
+                f"got {len(recommendations)}"
+            )
+        except Exception as exc:
+            raise TravelRecommendationStrategyError(
+                "Failed to generate recommendations."
+            ) from exc
 
         return [
             TravelRecommendation(country, season, recommendation)

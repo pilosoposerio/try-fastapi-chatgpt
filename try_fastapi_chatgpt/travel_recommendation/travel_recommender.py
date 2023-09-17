@@ -14,12 +14,6 @@ class UnknownCountryError(ValueError):
     pass
 
 
-class TravelRecommendationStrategyError(Exception):
-    """
-    Exception class used whenever the strategy fails to generate recommendations.
-    """
-
-
 @dataclass(frozen=True)
 class TravelRecommender:
     """
@@ -38,10 +32,6 @@ class TravelRecommender:
             raise UnknownCountryError(
                 f"No country matches: {country}"
             ) from exc
-        try:
-            results = self.recommender.recommend(country_info.name, season)
-            return results
-        except Exception as exc:
-            raise TravelRecommendationStrategyError(
-                "Failed to generate recommendations."
-            ) from exc
+
+        results = self.recommender.recommend(country_info.name, season)
+        return results

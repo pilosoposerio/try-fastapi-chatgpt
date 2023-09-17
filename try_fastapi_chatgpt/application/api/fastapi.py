@@ -3,12 +3,10 @@ from enum import Enum
 from fastapi import FastAPI, Query, HTTPException, status
 from typing_extensions import Annotated
 
-from try_fastapi_chatgpt.travel_recommendation.recommendation_strategy import (
+from try_fastapi_chatgpt.travel_recommendation import (
+    TravelRecommender,
     BoringTravelRecommendationStrategy,
     ChatGPTTravelRecommendationStrategy,
-)
-from try_fastapi_chatgpt.travel_recommendation.travel_recommender import (
-    TravelRecommender,
     UnknownCountryError,
     TravelRecommendationStrategyError,
 )
