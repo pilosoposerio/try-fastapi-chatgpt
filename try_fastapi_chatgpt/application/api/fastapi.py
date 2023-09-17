@@ -30,13 +30,13 @@ async def recommend_travel_activities(country: str, season: str):
     :param season: Name of a season (or weather condition).
     :return: A JSON list of objects with the country, season, and one activity.
     """
-    return [
-        {
-            "country": recommendation.country,
-            "season": recommendation.season,
-            "activity": recommendation.recommendation,
-        }
-        for recommendation in travel_recommender.recommend(
-            country, season
-        )
-    ]
+    return {
+        "country": country,
+        "season": season,
+        "recommendations": [
+            recommendation.recommendation
+            for recommendation in travel_recommender.recommend(
+                country, season
+            )
+        ],
+    }
