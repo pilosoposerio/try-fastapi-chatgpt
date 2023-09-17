@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Query, HTTPException.
+from enum import Enum
+
+from fastapi import FastAPI, Query, HTTPException, status
 from typing_extensions import Annotated
 
 from try_fastapi_chatgpt.travel_recommendation.recommendation_strategy import (
@@ -14,6 +16,14 @@ app = FastAPI()
 travel_recommender = TravelRecommender(BoringTravelRecommendationStrategy())
 
 
+class Season(str, Enum):
+    FALL = "fall"
+    WINTER = "winter"
+    SPRING = "spring"
+    SUMMER = "summer"
+    AUTUMN = "autumn"
+
+
 @app.get("/")
 def root():
     """
@@ -25,7 +35,7 @@ def root():
 @app.get("/recommend")
 def recommend_travel_activities(
     country: Annotated[str, Query(min_length=2)],
-    season: Annotated[str, Query(min_length=3)],
+    season: Annotated[Season, Query(min_length=3)],
 ):
     """
     Recommends three travel activities for a given country and season
@@ -44,4 +54,7 @@ def recommend_travel_activities(
             ],
         }
     except UnknownCountryError as exc:
-        raise HTTPException(detail=f"Unknown country: {country}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{exc}",
+        ) from exc
