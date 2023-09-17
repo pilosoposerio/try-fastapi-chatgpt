@@ -27,6 +27,12 @@ Before you begin, ensure you have the following installed on your system:
    docker run --rm -p 3000:3000 -e "OPENAI_API_KEY=sk-YOURSECRETKEY" try-fastapi-chatgpt:latest
    ```
 
+3. Here are the links:
+
+- `localhost:3000/` - just says hello...
+- `localhost:3000/docs` - shows the SwaggerUI (OpenAPI docs)
+- `localhost:3000/recommend` - endpoint for the travel recommender (see docs for more details)
+
 ## Getting Started for Development
 
 1. Clone this repository to your local machine:
