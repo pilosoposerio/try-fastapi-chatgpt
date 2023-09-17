@@ -5,15 +5,17 @@ from typing_extensions import Annotated
 
 from try_fastapi_chatgpt.travel_recommendation.recommendation_strategy import (
     BoringTravelRecommendationStrategy,
+    ChatGPTTravelRecommendationStrategy,
 )
 from try_fastapi_chatgpt.travel_recommendation.travel_recommender import (
     TravelRecommender,
     UnknownCountryError,
+    TravelRecommendationStrategyError,
 )
 
 app = FastAPI()
 
-travel_recommender = TravelRecommender(BoringTravelRecommendationStrategy())
+travel_recommender = TravelRecommender(ChatGPTTravelRecommendationStrategy())
 
 
 class Season(str, Enum):
@@ -57,4 +59,8 @@ def recommend_travel_activities(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{exc}",
+        ) from exc
+    except TravelRecommendationStrategyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"{exc}"
         ) from exc
