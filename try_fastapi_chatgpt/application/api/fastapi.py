@@ -34,14 +34,23 @@ def root():
 
 @app.get("/recommend")
 def recommend_travel_activities(
-    country: Annotated[str, Query(min_length=2)],
-    season: Annotated[Season, Query(min_length=3)],
+    country: Annotated[
+        str,
+        Query(
+            min_length=2,
+            description=(
+                "Travel destination; accepts ISO codes, country name;"
+                " we try to intelligently detect the country"
+                " based from your input."
+            ),
+        ),
+    ],
+    season: Annotated[
+        Season, Query(min_length=3, description="Four major seasons.")
+    ],
 ):
     """
-    Recommends three travel activities for a given country and season
-    :param country: Name of a country.
-    :param season: Name of a season (or weather condition).
-    :return: A JSON list of objects with the country, season, and one activity.
+    Recommends three travel activities for a given country and season.
     """
     try:
         recommendations = travel_recommender.recommend(country, season)
